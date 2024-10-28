@@ -9,6 +9,7 @@ import * as path from "node:path";
 import { GitError, GitResponseError, LogResult, simpleGit } from "simple-git";
 import { env, getBuildLogText, readFrontendState } from "../utils";
 import { pipeline } from "./build";
+import { triggerPull } from "../gitHelper";
 /** 前端流程
  1. pre-commit format
  2. git push origin:target-test
@@ -74,7 +75,7 @@ frontend.get("/resources/*", async (c) => {
   let stat: fs.Stats | undefined;
   try {
     stat = fs.statSync(absolutPath);
-  } catch {}
+  } catch { }
 
   console.log("get path", absolutPath);
   console.info(stat);
@@ -112,18 +113,10 @@ frontend.get("/web", async (c) => {
 frontend.post("/pipeline/streams2/:branchName/:commitId", async (c) => {
   console.log("trigger streams2 frontend pipeline");
   const { commitId, branchName } = c.req.param();
-  const { EZ_PIPELINE_STREAMS2_FRONTEND } = env(c);
-  console.log("Project locate at", EZ_PIPELINE_STREAMS2_FRONTEND);
-  const git = simpleGit({ baseDir: EZ_PIPELINE_STREAMS2_FRONTEND });
   try {
-    const logRes = await git.checkout(branchName).log();
-    const head = logRes.latest!;
-    if (head.hash.includes(commitId)) {
-      // 开始触发, 触发后不需要等待它结束
-      pipeline(env(c), branchName, commitId);
-    } else {
-      throw new HTTPException(404, { message: `没有在分支: ${branchName} 上找到指定的 commit. commitId: ${commitId}` });
-    }
+    await triggerPull(env(c), commitId);
+    // 开始触发, 触发后不需要等待它结束
+    pipeline(env(c), branchName, commitId);
     return c.text(`triggered the build process for commit: ${commitId}`);
   } catch (e) {
     if (e instanceof GitError) {
@@ -134,8 +127,11 @@ frontend.post("/pipeline/streams2/:branchName/:commitId", async (c) => {
         });
       }
       if (e.message.includes("did not match any file")) {
-        throw new HTTPException(404, { message: `库内没有名为 ${branchName} 的分支` });
+        throw new HTTPException(404, { message: `请检查 commitId ${commitId} 是否在库内` });
       }
+    }
+    if (e instanceof GitResponseError) {
+      throw new HTTPException(404, { message: `没有在分支: ${branchName} 上找到指定的 commit. commitId: ${commitId}` });
     }
     throw e;
   }

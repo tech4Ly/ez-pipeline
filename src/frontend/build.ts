@@ -51,7 +51,8 @@ export async function pipeline(env: EnvSchemaType, branchName: string, commitId:
     const [code, signals] = await promiseFromChildProcess(childHandler);
     if (code !== 0) {
       ctx.pipeStatus.writePipelineStatu("Failure", 0);
-      throw new HTTPException(500, { message: "pipeline fail on pnpm install" });
+      console.error("pipeline fail on pnpm install");
+      return;
     }
     console.log("installation exit by", code);
     console.log("installation singals is", signals);
@@ -74,7 +75,8 @@ export async function pipeline(env: EnvSchemaType, branchName: string, commitId:
     const [code, signals] = await promiseFromChildProcess(handler2);
     if (code !== 0) {
       ctx.pipeStatus.writePipelineStatu("Failure", 0);
-      throw new HTTPException(500, { message: "pipeline fail on pnpm run lint" });
+      console.error("pipeline fail on pnpm run lint");
+      return;
     }
     console.log("after exec pnpm run lint");
     console.log("installation exit by", code);
@@ -94,7 +96,8 @@ export async function pipeline(env: EnvSchemaType, branchName: string, commitId:
     const [code, signals] = await promiseFromChildProcess(handler);
     if (code !== 0) {
       ctx.pipeStatus.writePipelineStatu("Failure", 0);
-      throw new HTTPException(500, { message: "pipeline fail on pnpm run build" });
+      console.error("pipeline fail on pnpm run build");
+      return;
     }
     console.log("after exec pnpm run lint");
     console.log("installation exit by", code);
@@ -132,7 +135,7 @@ export class Pipeline {
     let flags: "w+" = "w+";
     try {
       stat = statSync(`${this.env.EZ_PIPELINE_LOG_LOCATION}/${commitId}`);
-    } catch {}
+    } catch { }
     if (stat && !force) {
       throw new HTTPException(500, { message: "已经构建过该 commit，请勿重复构建" });
     }

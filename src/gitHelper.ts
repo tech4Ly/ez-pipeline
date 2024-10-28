@@ -1,3 +1,5 @@
+import { simpleGit } from 'simple-git';
+import { EnvSchemaType } from './utils';
 /**
  * # 仓库种类
  * 1. bare repo 只储存 git 元数据，代码会被推送到该位置，代码拉去也是从这个文件拉取
@@ -5,8 +7,15 @@
  * 3. pipeline repo，触发 `post-receive` 后，触发 pipeline，pipeline 服务会维护一个 repo 从 bare repo 拉取用户上传到代码。拉取完成后 pipeline 开始执行
  * # git flow
  * 该函数从触发 `post-receive` 后开始执行，服务会控制 pipeline repo 从 bare repo 拉取最新的代码
- * 1. git checkout 
+ * 1. git fetch
+ * 2. git checkout [commidId]
+ * 3. 触发 pipeline
  */
-export function triggerPull() {
-  
+export async function triggerPull(env: EnvSchemaType, commitId: string) {
+  const { EZ_PIPELINE_STREAMS2_FRONTEND } = env;
+  console.log("Project locate at", EZ_PIPELINE_STREAMS2_FRONTEND);
+  const git = simpleGit({ baseDir: EZ_PIPELINE_STREAMS2_FRONTEND });
+  await git.fetch();
+  console.log('Checking-out to commit: ', commitId);
+  await git.checkout(commitId);
 }
