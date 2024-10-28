@@ -1,14 +1,12 @@
-import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { stream } from "hono/streaming";
 import { getMimeType } from "hono/utils/mime";
 import * as fs from "node:fs";
 import * as fsPs from "node:fs/promises";
 import * as path from "node:path";
-import { GitError, GitResponseError, LogResult, simpleGit } from "simple-git";
-import { env, getBuildLogText, readFrontendState } from "../utils";
-import { pipeline } from "./build";
+import { GitError, GitResponseError } from "simple-git";
+import { env, getBuildLogText, readFrontendState, writeFrontendState } from "../utils";
+import { startPipeline } from "../lib/pipeline/streams2-frontend";
 import { triggerPull } from "../gitHelper";
 /** 前端流程
  1. pre-commit format
@@ -30,11 +28,10 @@ import { triggerPull } from "../gitHelper";
 - 能够通过入口访问网页应用
 
 ### 开发者视角
-- [] 用户上传完分支后，服务需要获取到该分支代码进行构建
-- [] 构建完成后存放到文件系统中，改变该分支的状态，使得用户可以应用该分支进行测试
+- [x] 用户上传完分支后，服务需要获取到该分支代码进行构建
+- [x] 构建完成后存放到文件系统中，改变该分支的状态，使得用户可以应用该分支进行测试
 - [] 若是构建失败则无法合并至 main 分支, 并改变分支状态至错误状态
 - [] 应用该分支既是把 文件静态服务的入口移动至该分支的构建产物路径
-- [] 复原 mian 分支既是把 境外文件系统服务的入口移动至 main 分支产物的目录
 - [] 有一个定时服务会删除过期产物以及过期分支 (被标记过的特殊分支不会被删除)
 - [x] 为了避免前端应用在请求后端数据时出现 CORS 错误，需要一个代理
 - [x] 为了提供前端服务，需要一个静态资源服务
@@ -116,7 +113,7 @@ frontend.post("/pipeline/streams2/:branchName/:commitId", async (c) => {
   try {
     await triggerPull(env(c), commitId);
     // 开始触发, 触发后不需要等待它结束
-    pipeline(env(c), branchName, commitId);
+    startPipeline(env(c), branchName, commitId);
     return c.text(`triggered the build process for commit: ${commitId}`);
   } catch (e) {
     if (e instanceof GitError) {
@@ -138,9 +135,26 @@ frontend.post("/pipeline/streams2/:branchName/:commitId", async (c) => {
 });
 
 frontend.get("/pipeline/streams2/:branchName/:commitId", async (c) => {
-  const { branchName, commitId } = c.req.param();
+  const { commitId } = c.req.param();
   const log = await getBuildLogText(env(c), commitId);
   return c.text(log);
+});
+
+frontend.post('/pipeline/streams2/activeBranch/:commitId', async (c) => {
+  const { commitId } = c.req.param();
+  const myEnv = env(c);
+  const { availableBranches } = await readFrontendState(myEnv);
+  const branchInfo = availableBranches.find((value) => value.name.includes(commitId)
+  );
+  if (!branchInfo) {
+    return c.notFound();
+  }
+  await writeFrontendState('activeBranch', branchInfo.name, myEnv);
+  await writeFrontendState('activeResourcesPath', branchInfo.path, myEnv);
+  return c.json({
+    msg: 'The given branch is considered active',
+  });
+
 });
 
 export default frontend;
