@@ -60,7 +60,13 @@ export async function startPipeline(env: EnvSchemaType, branchName: string, comm
 
   pipe.use(async (ctx, next) => {
     await pipeTitle(ctx.logStream, "Step 3: pnpm run build");
-    const handler = exec("pnpm run build", { cwd: env.EZ_PIPELINE_STREAMS2_FRONTEND });
+    const handler = exec("pnpm run build:odc", {
+      cwd: env.EZ_PIPELINE_STREAMS2_FRONTEND,
+      env: {
+        ...ctx.env,
+        EZ_PIPELINE_OUTPUT_PATH: `${ctx.env.EZ_PIPELINE_STREAMS2_FRONTEND_OUTPUT}/${ctx.pipeStatus.commitId}`,
+      },
+    });
     if (!handler.stderr || !handler.stdout) {
       throw new Error("no stderr or stdout");
     }
@@ -87,9 +93,9 @@ export async function startPipeline(env: EnvSchemaType, branchName: string, comm
     const { availableBranches } = await readFrontendState(ctx.env);
     const branches = [...availableBranches, {
       name: `${ctx.pipeStatus.branchName}-${ctx.pipeStatus.commitId}`,
-      path: `${ctx.env.EZ_PIPELINE_STREAMS2_FRONTEND_RESOURCES}/${commitId}`,
+      path: `${ctx.env.EZ_PIPELINE_STREAMS2_FRONTEND_OUTPUT}/${commitId}`,
     }];
-    await writeFrontendState("availableBranches", availableBranches, ctx.env);
+    await writeFrontendState("availableBranches", branches, ctx.env);
     ctx.pipeStatus.writePipelineStatu("Success", 100);
     return;
   });

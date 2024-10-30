@@ -107,7 +107,7 @@ frontend.get("/web", async (c) => {
   return c.html(content);
 });
 
-frontend.post("/pipeline/streams2/:branchName/:commitId", async (c) => {
+frontend.post("/pipeline/streams2/frontend/:branchName/:commitId", async (c) => {
   console.log("trigger streams2 frontend pipeline");
   const { commitId, branchName } = c.req.param();
   try {
@@ -134,13 +134,21 @@ frontend.post("/pipeline/streams2/:branchName/:commitId", async (c) => {
   }
 });
 
-frontend.get("/pipeline/streams2/:branchName/:commitId", async (c) => {
+frontend.get("/pipeline/streams2/frontend/:branchName/:commitId", async (c) => {
   const { commitId } = c.req.param();
   const log = await getBuildLogText(env(c), commitId);
   return c.text(log);
 });
 
-frontend.post("/pipeline/streams2/activeBranch/:commitId", async (c) => {
+frontend.get("/pipeline/streams2/frontend", async (c) => {
+  const { buildStatus } = await readFrontendState(env(c));
+  return c.json({
+    msg: "Return build staus",
+    buildingStatus: buildStatus,
+  });
+});
+
+frontend.post("/pipeline/streams2/frontend/activeBranch/:commitId", async (c) => {
   const { commitId } = c.req.param();
   const myEnv = env(c);
   const { availableBranches } = await readFrontendState(myEnv);
