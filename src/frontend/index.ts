@@ -5,9 +5,9 @@ import * as fs from "node:fs";
 import * as fsPs from "node:fs/promises";
 import * as path from "node:path";
 import { GitError, GitResponseError } from "simple-git";
-import { env, getBuildLogText, readFrontendState, writeFrontendState } from "../utils";
-import { startPipeline } from "../lib/pipeline/streams2-frontend";
 import { triggerPull } from "../gitHelper";
+import { startPipeline } from "../lib/pipeline/streams2-frontend";
+import { env, getBuildLogText, readFrontendState, writeFrontendState } from "../utils";
 /** 前端流程
  1. pre-commit format
  2. git push origin:target-test
@@ -72,7 +72,7 @@ frontend.get("/resources/*", async (c) => {
   let stat: fs.Stats | undefined;
   try {
     stat = fs.statSync(absolutPath);
-  } catch { }
+  } catch {}
 
   console.log("get path", absolutPath);
   console.info(stat);
@@ -140,21 +140,19 @@ frontend.get("/pipeline/streams2/:branchName/:commitId", async (c) => {
   return c.text(log);
 });
 
-frontend.post('/pipeline/streams2/activeBranch/:commitId', async (c) => {
+frontend.post("/pipeline/streams2/activeBranch/:commitId", async (c) => {
   const { commitId } = c.req.param();
   const myEnv = env(c);
   const { availableBranches } = await readFrontendState(myEnv);
-  const branchInfo = availableBranches.find((value) => value.name.includes(commitId)
-  );
+  const branchInfo = availableBranches.find((value) => value.name.includes(commitId));
   if (!branchInfo) {
     return c.notFound();
   }
-  await writeFrontendState('activeBranch', branchInfo.name, myEnv);
-  await writeFrontendState('activeResourcesPath', branchInfo.path, myEnv);
+  await writeFrontendState("activeBranch", branchInfo.name, myEnv);
+  await writeFrontendState("activeResourcesPath", branchInfo.path, myEnv);
   return c.json({
-    msg: 'The given branch is considered active',
+    msg: "The given branch is considered active",
   });
-
 });
 
 export default frontend;

@@ -75,7 +75,7 @@ const envSchema = z.object({
   EZ_PIPELINE_LOG_LOCATION: z.string(),
   EZ_PIPELINE: z.string(),
   EZ_PIPELINE_STATE_LOCATION: z.string(),
-  EZ_PIPELINE_STREAMS2_FRONTEND_RESOURCES: z.string()
+  EZ_PIPELINE_STREAMS2_FRONTEND_RESOURCES: z.string(),
 });
 export type EnvSchemaType = z.infer<typeof envSchema>;
 export let env = null as unknown as typeof honoEnv<EnvSchemaType>;

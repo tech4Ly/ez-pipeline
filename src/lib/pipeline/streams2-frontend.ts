@@ -1,8 +1,13 @@
 import { exec } from "node:child_process";
-import { EnvSchemaType, FrontEndStateType, promiseFromChildProcess, readFrontendState, Status, writeFrontendState } from "../../utils";
+import {
+  EnvSchemaType,
+  FrontEndStateType,
+  promiseFromChildProcess,
+  readFrontendState,
+  Status,
+  writeFrontendState,
+} from "../../utils";
 import { Pipeline, pipeTitle } from ".";
-
-
 
 export async function startPipeline(env: EnvSchemaType, branchName: string, commitId: string, force: boolean = false) {
   const pipe = new Pipeline(env);
@@ -78,17 +83,15 @@ export async function startPipeline(env: EnvSchemaType, branchName: string, comm
   });
 
   pipe.use(async (ctx, next) => {
-    console.log('The process of streams2-frontend has done');
+    console.log("The process of streams2-frontend has done");
     const { availableBranches } = await readFrontendState(ctx.env);
     const branches = [...availableBranches, {
       name: `${ctx.pipeStatus.branchName}-${ctx.pipeStatus.commitId}`,
       path: `${ctx.env.EZ_PIPELINE_STREAMS2_FRONTEND_RESOURCES}/${commitId}`,
     }];
-    await writeFrontendState('availableBranches', availableBranches, ctx.env);
+    await writeFrontendState("availableBranches", availableBranches, ctx.env);
     ctx.pipeStatus.writePipelineStatu("Success", 100);
     return;
   });
   await pipe.exec();
 }
-
-

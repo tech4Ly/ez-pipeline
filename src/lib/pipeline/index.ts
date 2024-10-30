@@ -59,7 +59,7 @@ export class Pipeline {
     let flags: "w+" = "w+";
     try {
       stat = statSync(`${this.env.EZ_PIPELINE_LOG_LOCATION}/${commitId}`);
-    } catch { }
+    } catch {}
     if (stat && !force) {
       throw new HTTPException(500, { message: "已经构建过该 commit，请勿重复构建" });
     }
@@ -67,7 +67,10 @@ export class Pipeline {
     this.pipeStatus = pipeStatus;
     pipeStatus.writePipelineStatu("In Progress", 10);
 
-    const wStream = createWriteStream(`${this.env.EZ_PIPELINE_LOG_LOCATION}/${commitId}.log`, { flags, autoClose: false });
+    const wStream = createWriteStream(`${this.env.EZ_PIPELINE_LOG_LOCATION}/${commitId}.log`, {
+      flags,
+      autoClose: false,
+    });
     this.logStream = wStream;
     this.inited = true;
   }

@@ -1,5 +1,5 @@
-import { simpleGit } from 'simple-git';
-import { EnvSchemaType } from './utils';
+import { simpleGit } from "simple-git";
+import { EnvSchemaType } from "./utils";
 /**
  * # 仓库种类
  * 1. bare repo 只储存 git 元数据，代码会被推送到该位置，代码拉去也是从这个文件拉取
@@ -16,6 +16,6 @@ export async function triggerPull(env: EnvSchemaType, commitId: string) {
   console.log("Project locate at", EZ_PIPELINE_STREAMS2_FRONTEND);
   const git = simpleGit({ baseDir: EZ_PIPELINE_STREAMS2_FRONTEND });
   await git.fetch();
-  console.log('Checking-out to commit: ', commitId);
+  console.log("Checking-out to commit: ", commitId);
   await git.checkout(commitId);
 }
