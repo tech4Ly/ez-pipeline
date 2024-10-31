@@ -39,7 +39,7 @@ export async function startPipeline(env: EnvSchemaType, branchName: string, comm
   pipe.use(async (ctx, next) => {
     await pipeTitle(ctx.logStream, "Step 2: pnpm run lint");
     console.log("start to run pnpm install");
-    const handler2 = exec("pnpm run lint", { cwd: env.EZ_PIPELINE_STREAMS2_FRONTEND });
+    const handler2 = exec("pnpm run lint:sit", { cwd: env.EZ_PIPELINE_STREAMS2_FRONTEND });
     if (!handler2.stderr || !handler2.stdout) {
       throw new Error("no stderr or stdout");
     }
@@ -48,7 +48,7 @@ export async function startPipeline(env: EnvSchemaType, branchName: string, comm
     const [code, signals] = await promiseFromChildProcess(handler2);
     if (code !== 0) {
       ctx.pipeStatus.writePipelineStatu("Failure", 0);
-      console.error("pipeline fail on pnpm run lint");
+      console.error("pipeline fail on pnpm run lint:sit");
       return;
     }
     console.log("after exec pnpm run lint");
@@ -78,7 +78,7 @@ export async function startPipeline(env: EnvSchemaType, branchName: string, comm
       console.error("pipeline fail on pnpm run build");
       return;
     }
-    console.log("after exec pnpm run lint");
+    console.log("after exec pnpm run build:odc");
     console.log("installation exit by", code);
     console.log("installation singals is", signals);
     console.log("the stream is writeable", ctx.logStream.writable);
