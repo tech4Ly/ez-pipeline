@@ -61,7 +61,7 @@ export function readEnv() {
   const zodRes = envSchema.safeParse(result.parsed);
   if (zodRes.error) {
     const errFields = zodRes.error.errors.reduce((pre, cur) => {
-      return pre + ", " + cur.message;
+      return pre + ", " + cur.path.toString();
     }, "");
     console.error(`ENV file not validate, miss field ${errFields}`);
     process.exit(1);
