@@ -71,7 +71,7 @@ export class Pipeline {
     if (stat && !force) {
       throw new HTTPException(500, { message: "已经构建过该 commit，请勿重复构建" });
     }
-    const pipeStatus = new PipelineStatus(commitId, this.pipelineName, branchName, this.env);
+    const pipeStatus = new PipelineStatus(commitId, branchName, this.pipelineName, this.env);
     this.pipeStatus = pipeStatus;
     pipeStatus.writePipelineStatu("In Progress", 10);
 
