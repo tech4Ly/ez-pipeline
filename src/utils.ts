@@ -60,7 +60,10 @@ export function readEnv() {
   }
   const zodRes = envSchema.safeParse(result.parsed);
   if (zodRes.error) {
-    console.error("ENV file not validate");
+    const errFields = zodRes.error.errors.reduce((pre, cur) => {
+      return pre + ", " + cur.message;
+    }, "");
+    console.error(`ENV file not validate, miss field ${errFields}`);
     process.exit(1);
   }
   env = honoEnv<EnvSchemaType>;
