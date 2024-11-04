@@ -155,12 +155,15 @@ export class PipelineState {
 
   async updateBuildStatus(name: string, commitId: string, status: BuildStatus) {
     const state = this.state.find(s => s.pipelineName === name);
-    const targetStatusIdx = state?.buildStatus.findIndex(b => b.commitId === commitId);
-    if (state && targetStatusIdx) {
+    if (state) {
+      const targetStatusIdx = state.buildStatus.findIndex(b => b.commitId === commitId);
       const newBuildStatus = [...state.buildStatus];
+      if (targetStatusIdx < 0) {
+        newBuildStatus.push(status);
+      } else {
       newBuildStatus[targetStatusIdx] = status;
-      // await this.replaceStateByName(name, newState);
       await this.updateStateByKey(name, "buildStatus", newBuildStatus);
+      }
     }
   }
 }
