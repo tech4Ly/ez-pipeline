@@ -112,7 +112,7 @@ export class PipelineState {
     const feState = JSON.parse(jsonFile);
     const result = stateSchema.safeParse(feState);
     if (result.error) {
-      throw new HTTPException(500, { message: "Parsing State Error" });
+      throw new HTTPException(500, { message: "Parsing State Error", cause: result.error });
     }
     this.state = result.data;
     return result.data;
