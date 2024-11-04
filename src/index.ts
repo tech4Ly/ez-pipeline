@@ -1,6 +1,5 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import { HTTPException } from "hono/http-exception";
 import frontend from "./frontend";
 import { readEnv } from "./utils";
 import { type EnvSchemaType } from "./utils";

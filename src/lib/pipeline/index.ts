@@ -1,7 +1,7 @@
 import { HTTPException } from "hono/http-exception";
 import { createWriteStream, Stats, statSync, WriteStream } from "node:fs";
 import { Readable } from "node:stream";
-import { BuildStatus, EnvSchemaType, FrontEndStateType, Status, writeFrontendState } from "../../utils";
+import { BuildStatus, EnvSchemaType, PipelineState, StateType, Status } from "../../utils";
 
 export async function printTitle(w: WriteStream, title: string) {
   const b = Buffer.from(`\r\n==============${title}===========\r\n`);
@@ -33,12 +33,8 @@ class PipelineStatus {
       branchName: this.branchName,
       progression: progression,
     };
-    await writeFrontendState("buildStatus", newStatus, this.env);
-  }
-
-  private stateFactory() {
-    if (this.pipelineName === 'streams2-')
-
+    const state = await PipelineState.init(this.env);
+    await state.updateBuildStatus(this.pipelineName, this.commitId, newStatus);
   }
 }
 
@@ -46,7 +42,10 @@ interface Next {
   (): Promise<void>;
 }
 
-type PipelineHandler = (ctx: Pick<Pipeline, "env" | "logStream" | "pipeStatus">, next: Next) => Promise<void>;
+type PipelineHandler = (
+  ctx: Pick<Pipeline, "env" | "logStream" | "pipeStatus" | "pipelineName">,
+  next: Next,
+) => Promise<void>;
 
 export class Pipeline {
   middleware: Array<PipelineHandler> = [];
@@ -54,8 +53,10 @@ export class Pipeline {
   logStream: WriteStream = null as unknown as WriteStream;
   pipeStatus: PipelineStatus = null as unknown as PipelineStatus;
   inited: boolean = false;
+  pipelineName: string;
   handleErr: (e: Error) => void;
-  constructor(env: EnvSchemaType) {
+  constructor(env: EnvSchemaType, pipelineName: string) {
+    this.pipelineName = pipelineName;
     this.env = env;
     this.handleErr = (err: Error) => {
       throw err;
@@ -66,11 +67,11 @@ export class Pipeline {
     let flags: "w+" = "w+";
     try {
       stat = statSync(`${this.env.EZ_PIPELINE_LOG_LOCATION}/${commitId}`);
-    } catch { }
+    } catch {}
     if (stat && !force) {
       throw new HTTPException(500, { message: "已经构建过该 commit，请勿重复构建" });
     }
-    const pipeStatus = new PipelineStatus(commitId, branchName, this.env);
+    const pipeStatus = new PipelineStatus(commitId, this.pipelineName, branchName, this.env);
     this.pipeStatus = pipeStatus;
     pipeStatus.writePipelineStatu("In Progress", 10);
 

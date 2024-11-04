@@ -1,9 +1,10 @@
 import { exec } from "child_process";
 import { EnvSchemaType, promiseFromChildProcess } from "../../utils";
+import { NOTIFICATION_LETTER } from "../constants";
 import { Pipeline, printTitle } from ".";
 
 export async function nlPiprline(env: EnvSchemaType, branchName: string, commitId: string, force: boolean = false) {
-  const pipeline = new Pipeline(env);
+  const pipeline = new Pipeline(env, NOTIFICATION_LETTER);
   await pipeline.init(commitId, branchName, force);
 
   pipeline.use(async (ctx, next) => {

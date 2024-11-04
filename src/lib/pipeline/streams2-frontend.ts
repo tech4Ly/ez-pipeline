@@ -1,16 +1,10 @@
 import { exec } from "node:child_process";
-import {
-  EnvSchemaType,
-  FrontEndStateType,
-  promiseFromChildProcess,
-  readFrontendState,
-  Status,
-  writeFrontendState,
-} from "../../utils";
+import { EnvSchemaType, PipelineState, promiseFromChildProcess, StateType, Status } from "../../utils";
+import { STREAMS2_FRONTEND } from "../constants";
 import { Pipeline, printTitle } from ".";
 
 export async function startPipeline(env: EnvSchemaType, branchName: string, commitId: string, force: boolean = false) {
-  const pipe = new Pipeline(env);
+  const pipe = new Pipeline(env, STREAMS2_FRONTEND);
   await pipe.init(commitId, branchName, force);
   pipe.use(async (ctx, next) => {
     await printTitle(ctx.logStream, "Step 1: pnpm install");
@@ -90,12 +84,13 @@ export async function startPipeline(env: EnvSchemaType, branchName: string, comm
 
   pipe.use(async (ctx, next) => {
     console.log("The process of streams2-frontend has done");
-    const { availableBranches } = await readFrontendState(ctx.env);
+    const state = await PipelineState.init(ctx.env);
+    const { availableBranches } = state.readByPipelineName(STREAMS2_FRONTEND);
     const branches = [...availableBranches, {
       name: `${ctx.pipeStatus.branchName}-${ctx.pipeStatus.commitId}`,
       path: `${ctx.env.EZ_PIPELINE_STREAMS2_FRONTEND_OUTPUT}/${commitId}`,
     }];
-    await writeFrontendState("availableBranches", branches, ctx.env);
+    await state.updateStateByKey(ctx.pipelineName, "availableBranches", branches);
     ctx.pipeStatus.writePipelineStatu("Success", 100);
     return;
   });

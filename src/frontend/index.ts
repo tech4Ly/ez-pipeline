@@ -6,8 +6,9 @@ import * as fsPs from "node:fs/promises";
 import * as path from "node:path";
 import { GitError, GitResponseError } from "simple-git";
 import { triggerPull } from "../gitHelper";
+import { STREAMS2_FRONTEND } from "../lib/constants";
 import { startPipeline } from "../lib/pipeline/streams2-frontend";
-import { env, getBuildLogText, readFrontendState, writeFrontendState } from "../utils";
+import { env, getBuildLogText, PipelineState } from "../utils";
 /** 前端流程
  1. pre-commit format
  2. git push origin:target-test
@@ -62,7 +63,8 @@ a static resrouces service
 */
 frontend.get("/resources/*", async (c) => {
   // build a file system
-  const { activeResourcesPath } = await readFrontendState(env(c));
+  const state = await PipelineState.init(env(c));
+  const { activeResourcesPath } = state.readByPipelineName(STREAMS2_FRONTEND);
   const reqPath = c.req.path;
   // 这里是绝对路径 split 后会有至少三个元素 ['', 'resources', 'file.xx']
   let paths = reqPath.split("/");
@@ -102,7 +104,8 @@ frontend.get("/resources/*", async (c) => {
 });
 
 frontend.get("/web", async (c) => {
-  const { activeResourcesPath } = await readFrontendState(env(c));
+  const state = await PipelineState.init(env(c));
+  const { activeResourcesPath } = state.readByPipelineName(STREAMS2_FRONTEND);
   const indexPath = path.resolve(activeResourcesPath, "index.html");
   const content = fsPs.readFile(indexPath, { encoding: "utf8" });
   return c.html(content);
@@ -111,13 +114,14 @@ frontend.get("/web", async (c) => {
 frontend.post("/pipeline/streams2/frontend/activeBranch/:commitId", async (c) => {
   const { commitId } = c.req.param();
   const myEnv = env(c);
-  const { availableBranches } = await readFrontendState(myEnv);
+  const state = await PipelineState.init(myEnv);
+  const { availableBranches } = state.readByPipelineName(STREAMS2_FRONTEND);
   const branchInfo = availableBranches.find((value) => value.name.includes(commitId));
   if (!branchInfo) {
     return c.notFound();
   }
-  await writeFrontendState("activeBranch", branchInfo.name, myEnv);
-  await writeFrontendState("activeResourcesPath", branchInfo.path, myEnv);
+  await state.updateStateByKey(STREAMS2_FRONTEND, "activeBranch", branchInfo.name);
+  await state.updateStateByKey(STREAMS2_FRONTEND, "activeResourcesPath", branchInfo.path);
   return c.json({
     msg: "The given branch is considered active",
   });
@@ -157,7 +161,8 @@ frontend.get("/pipeline/streams2/frontend/:branchName/:commitId", async (c) => {
 });
 
 frontend.get("/pipeline/streams2/frontend", async (c) => {
-  const { buildStatus } = await readFrontendState(env(c));
+  const state = await PipelineState.init(env(c));
+  const { buildStatus } = state.readByPipelineName(STREAMS2_FRONTEND);
   return c.json({
     msg: "Return build staus",
     buildingStatus: buildStatus,
