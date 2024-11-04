@@ -48,11 +48,11 @@ frontend.all("/api/*", (c) => {
   const { method, path, raw } = c.req;
   const { EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR } = env(c);
   console.log("env: ", EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR);
-  const reqOptions: RequestInit & { duplex: 'half' } = {
+  const reqOptions: RequestInit & { duplex: "half" } = {
     method,
     ...(raw.body && { body: raw.body }),
     headers: raw.headers,
-    duplex: 'half'
+    duplex: "half",
   };
   return fetch(`${EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR}${path}`, reqOptions);
 });
@@ -73,7 +73,7 @@ frontend.get("/resources/*", async (c) => {
   let stat: fs.Stats | undefined;
   try {
     stat = fs.statSync(absolutPath);
-  } catch { }
+  } catch {}
 
   console.log("get path", absolutPath);
   console.info(stat);
@@ -107,7 +107,6 @@ frontend.get("/web", async (c) => {
   const content = fsPs.readFile(indexPath, { encoding: "utf8" });
   return c.html(content);
 });
-
 
 frontend.post("/pipeline/streams2/frontend/activeBranch/:commitId", async (c) => {
   const { commitId } = c.req.param();
@@ -164,6 +163,5 @@ frontend.get("/pipeline/streams2/frontend", async (c) => {
     buildingStatus: buildStatus,
   });
 });
-
 
 export default frontend;

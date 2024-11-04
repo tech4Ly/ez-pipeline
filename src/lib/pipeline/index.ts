@@ -1,9 +1,9 @@
 import { HTTPException } from "hono/http-exception";
 import { createWriteStream, Stats, statSync, WriteStream } from "node:fs";
 import { Readable } from "node:stream";
-import { EnvSchemaType, FrontEndStateType, Status, writeFrontendState } from "../../utils";
+import { BuildStatus, EnvSchemaType, FrontEndStateType, Status, writeFrontendState } from "../../utils";
 
-export async function pipeTitle(w: WriteStream, title: string) {
+export async function printTitle(w: WriteStream, title: string) {
   const b = Buffer.from(`\r\n==============${title}===========\r\n`);
   const rs = Readable.from(b);
   rs.pipe(w, { end: false });
@@ -19,19 +19,26 @@ class PipelineStatus {
   progression = 0;
   status: Status = "In Progress";
   env: EnvSchemaType;
-  constructor(commitId: string, branchName: string, env: EnvSchemaType) {
+  pipelineName: string;
+  constructor(commitId: string, branchName: string, pipelineName: string, env: EnvSchemaType) {
     this.branchName = branchName;
     this.commitId = commitId;
     this.env = env;
+    this.pipelineName = pipelineName;
   }
   async writePipelineStatu(nextStatus: Status, progression: number) {
-    const newStatus: FrontEndStateType["buildStatus"][number] = {
+    const newStatus: BuildStatus = {
       status: nextStatus,
       commitId: this.commitId,
       branchName: this.branchName,
       progression: progression,
     };
     await writeFrontendState("buildStatus", newStatus, this.env);
+  }
+
+  private stateFactory() {
+    if (this.pipelineName === 'streams2-')
+
   }
 }
 
@@ -59,7 +66,7 @@ export class Pipeline {
     let flags: "w+" = "w+";
     try {
       stat = statSync(`${this.env.EZ_PIPELINE_LOG_LOCATION}/${commitId}`);
-    } catch {}
+    } catch { }
     if (stat && !force) {
       throw new HTTPException(500, { message: "已经构建过该 commit，请勿重复构建" });
     }

@@ -7,13 +7,13 @@ import {
   Status,
   writeFrontendState,
 } from "../../utils";
-import { Pipeline, pipeTitle } from ".";
+import { Pipeline, printTitle } from ".";
 
 export async function startPipeline(env: EnvSchemaType, branchName: string, commitId: string, force: boolean = false) {
   const pipe = new Pipeline(env);
   await pipe.init(commitId, branchName, force);
   pipe.use(async (ctx, next) => {
-    await pipeTitle(ctx.logStream, "Step 1: pnpm install");
+    await printTitle(ctx.logStream, "Step 1: pnpm install");
     const childHandler = exec("pnpm i", { cwd: env.EZ_PIPELINE_STREAMS2_FRONTEND });
     if (!childHandler.stderr || !childHandler.stdout) {
       throw new Error("no stderr or stdout");
@@ -37,7 +37,7 @@ export async function startPipeline(env: EnvSchemaType, branchName: string, comm
   });
 
   pipe.use(async (ctx, next) => {
-    await pipeTitle(ctx.logStream, "Step 2: pnpm run lint");
+    await printTitle(ctx.logStream, "Step 2: pnpm run lint");
     console.log("start to run pnpm install");
     const handler2 = exec("pnpm run lint:sit", { cwd: env.EZ_PIPELINE_STREAMS2_FRONTEND });
     if (!handler2.stderr || !handler2.stdout) {
@@ -59,7 +59,7 @@ export async function startPipeline(env: EnvSchemaType, branchName: string, comm
   });
 
   pipe.use(async (ctx, next) => {
-    await pipeTitle(ctx.logStream, "Step 3: pnpm run build");
+    await printTitle(ctx.logStream, "Step 3: pnpm run build");
     const handler = exec("pnpm run build:odc", {
       cwd: env.EZ_PIPELINE_STREAMS2_FRONTEND,
       env: {
