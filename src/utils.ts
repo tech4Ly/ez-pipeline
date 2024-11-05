@@ -137,7 +137,7 @@ export class PipelineState {
     this.state = state;
     // this._stateQueque.push(state);
     // await this.exectue();
-    writeFileSync(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(this._stateQueque.pop()));
+    writeFileSync(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(state));
   }
   flush() {
     if (this._stateQueque.length > 0) {
