@@ -75,7 +75,7 @@ frontend.get("/resources/*", async (c) => {
   let stat: fs.Stats | undefined;
   try {
     stat = fs.statSync(absolutPath);
-  } catch {}
+  } catch { }
 
   console.log("get path", absolutPath);
   console.info(stat);
@@ -120,8 +120,8 @@ frontend.post("/pipeline/streams2/frontend/activeBranch/:commitId", async (c) =>
   if (!branchInfo) {
     return c.notFound();
   }
-  await state.updateStateByKey(STREAMS2_FRONTEND, "activeBranch", branchInfo.name);
-  await state.updateStateByKey(STREAMS2_FRONTEND, "activeResourcesPath", branchInfo.path);
+  state.updateStateByKey(STREAMS2_FRONTEND, "activeBranch", branchInfo.name);
+  state.updateStateByKey(STREAMS2_FRONTEND, "activeResourcesPath", branchInfo.path);
   return c.json({
     msg: "The given branch is considered active",
   });
@@ -130,10 +130,11 @@ frontend.post("/pipeline/streams2/frontend/activeBranch/:commitId", async (c) =>
 frontend.post("/pipeline/streams2/frontend/:branchName/:commitId", async (c) => {
   console.log("trigger streams2 frontend pipeline");
   const { commitId, branchName } = c.req.param();
+  const myEnv = env(c);
   try {
-    await triggerPull(env(c), commitId);
+    await triggerPull(myEnv.EZ_PIPELINE_STREAMS2_FRONTEND, commitId);
     // 开始触发, 触发后不需要等待它结束
-    startPipeline(env(c), branchName, commitId);
+    startPipeline(myEnv, branchName, commitId);
     return c.text(`triggered the build process for commit: ${commitId}`);
   } catch (e) {
     if (e instanceof GitError) {
