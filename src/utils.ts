@@ -4,6 +4,7 @@ import { env as honoEnv } from "hono/adapter";
 import { HTTPException } from "hono/http-exception";
 import { ChildProcess } from "node:child_process";
 import * as fs from "node:fs/promises";
+import { writeFileSync } from 'node:fs';
 import process from "node:process";
 import * as z from "zod";
 
@@ -137,10 +138,10 @@ export class PipelineState {
     this._stateQueque.push(state);
     await this.exectue();
   }
-  async flush() {
+  flush() {
     if (this._stateQueque.length > 0) {
-      while (this._writing) {}
-      await fs.writeFile(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(this._stateQueque.pop()));
+      while (this._writing) { }
+       writeFileSync(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(this._stateQueque.pop()));
     }
   }
 
