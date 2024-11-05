@@ -3,8 +3,8 @@ import { expand } from "dotenv-expand";
 import { env as honoEnv } from "hono/adapter";
 import { HTTPException } from "hono/http-exception";
 import { ChildProcess } from "node:child_process";
+import { writeFileSync } from "node:fs";
 import * as fs from "node:fs/promises";
-import { writeFileSync } from 'node:fs';
 import process from "node:process";
 import * as z from "zod";
 
@@ -133,15 +133,16 @@ export class PipelineState {
     return res;
   }
 
-  async replaceState(state: StateType) {
+  replaceState(state: StateType) {
     this.state = state;
-    this._stateQueque.push(state);
-    await this.exectue();
+    // this._stateQueque.push(state);
+    // await this.exectue();
+    writeFileSync(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(this._stateQueque.pop()));
   }
   flush() {
     if (this._stateQueque.length > 0) {
-      while (this._writing) { }
-       writeFileSync(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(this._stateQueque.pop()));
+      while (this._writing) {}
+      writeFileSync(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(this._stateQueque.pop()));
     }
   }
 
@@ -158,25 +159,25 @@ export class PipelineState {
     }
   }
 
-  async replaceStateByName(name: string, state: StateElementType) {
+  replaceStateByName(name: string, state: StateElementType) {
     const newState = [...this.state];
     const idx = newState.findIndex(s => s.pipelineName === name);
     newState[idx] = state;
     this.replaceState(newState);
   }
 
-  async updateStateByKey<K extends keyof StateElementType>(name: string, key: K, value: StateElementType[K]) {
+  updateStateByKey<K extends keyof StateElementType>(name: string, key: K, value: StateElementType[K]) {
     const state = this.state.find(s => s.pipelineName === name);
     if (state) {
       const newState = {
         ...state,
         [key]: value,
       };
-      await this.replaceStateByName(name, newState);
+      this.replaceStateByName(name, newState);
     }
   }
 
-  async updateBuildStatus(name: string, commitId: string, status: BuildStatus) {
+  updateBuildStatus(name: string, commitId: string, status: BuildStatus) {
     const state = this.state.find(s => s.pipelineName === name);
     if (state) {
       const targetStatusIdx = state.buildStatus.findIndex(b => b.commitId === commitId);
@@ -186,7 +187,7 @@ export class PipelineState {
       } else {
         newBuildStatus[targetStatusIdx] = status;
       }
-      await this.updateStateByKey(name, "buildStatus", newBuildStatus);
+      this.updateStateByKey(name, "buildStatus", newBuildStatus);
     }
   }
 }
