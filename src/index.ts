@@ -1,8 +1,8 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import { SignalConstants } from "node:os";
 import frontend from "./frontend";
-import { PipelineState, readEnv } from "./utils";
+import nl from "./nl";
+import { readEnv } from "./utils";
 import { type EnvSchemaType } from "./utils";
 
 readEnv();
@@ -18,6 +18,7 @@ app.get("/pipeline", (c) => {
   return c.text("Hello, World!");
 });
 app.route("/", frontend);
+app.route("/", nl);
 app.onError((err, c) => {
   console.error(err);
   return c.json({ errorMsg: err.message }, 500);
@@ -26,13 +27,4 @@ app.onError((err, c) => {
 serve({
   ...app,
   hostname: "0.0.0.0",
-});
-
-const signals: Array<keyof SignalConstants> = ["SIGINT", "SIGTERM", "SIGQUIT"];
-signals.forEach(s => {
-  process.on(s, async () => {
-    const state = await PipelineState.init(process.env as any);
-    await state.flush();
-    process.exit();
-  });
 });

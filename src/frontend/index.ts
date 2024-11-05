@@ -75,7 +75,7 @@ frontend.get("/resources/*", async (c) => {
   let stat: fs.Stats | undefined;
   try {
     stat = fs.statSync(absolutPath);
-  } catch { }
+  } catch {}
 
   console.log("get path", absolutPath);
   console.info(stat);

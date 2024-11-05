@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { triggerPull } from "./gitHelper";
-import { env, getBuildLogText, PipelineState } from "./utils";
-import { GitError, GitResponseError } from "simple-git";
 import { HTTPException } from "hono/http-exception";
-import { nlPiprline } from "./lib/pipeline/streams2-p2-notification-letter-service";
+import { GitError, GitResponseError } from "simple-git";
+import { triggerPull } from "./gitHelper";
 import { NOTIFICATION_LETTER } from "./lib/constants";
+import { nlPiprline } from "./lib/pipeline/streams2-p2-notification-letter-service";
+import { env, getBuildLogText, PipelineState } from "./utils";
 
 const nl = new Hono();
 
@@ -24,8 +24,7 @@ nl.post("/pipeline/streams2/nl/activeBranch/:commitId", async (c) => {
   });
 });
 
-nl.post('/pipeline/streams2/nl/:branchName/:commitId', async (c) => {
-
+nl.post("/pipeline/streams2/nl/:branchName/:commitId", async (c) => {
   console.log("trigger streams2 nl pipeline");
   const { commitId, branchName } = c.req.param();
   const myEnv = env(c);
@@ -67,3 +66,5 @@ nl.get("/pipeline/streams2/nl", async (c) => {
     buildingStatus: buildStatus,
   });
 });
+
+export default nl;
