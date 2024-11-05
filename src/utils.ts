@@ -93,6 +93,8 @@ declare global {
 export class PipelineState {
   env: EnvSchemaType;
   state: StateType = [];
+  private _stateQueque: StateType[] = [];
+  private _writing = false;
   private constructor(env: EnvSchemaType) {
     this.env = env;
   }
@@ -131,8 +133,23 @@ export class PipelineState {
   }
 
   async replaceState(state: StateType) {
-    await fs.writeFile(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(state));
     this.state = state;
+    this._stateQueque.push(state);
+    await this.exectue();
+    // await fs.writeFile(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(state));
+  }
+
+  private async exectue() {
+    const curLength = this._stateQueque.length;
+    if (curLength > 0 && !this._writing) {
+      const lastState = this._stateQueque[curLength - 1];
+      this._writing = true;
+      await fs.writeFile(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(lastState));
+      this._writing = false;
+      this._stateQueque = this._stateQueque.splice(0, curLength);
+    } else {
+      console.log("Somewhere is writing state, pushed to queue");
+    }
   }
 
   async replaceStateByName(name: string, state: StateElementType) {
@@ -161,9 +178,9 @@ export class PipelineState {
       if (targetStatusIdx < 0) {
         newBuildStatus.push(status);
       } else {
-      newBuildStatus[targetStatusIdx] = status;
-      await this.updateStateByKey(name, "buildStatus", newBuildStatus);
+        newBuildStatus[targetStatusIdx] = status;
       }
+      await this.updateStateByKey(name, "buildStatus", newBuildStatus);
     }
   }
 }
