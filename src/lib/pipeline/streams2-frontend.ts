@@ -90,7 +90,7 @@ export async function startPipeline(env: EnvSchemaType, branchName: string, comm
       name: `${ctx.pipeStatus.branchName}-${ctx.pipeStatus.commitId}`,
       path: `${ctx.env.EZ_PIPELINE_STREAMS2_FRONTEND_OUTPUT}/${commitId}`,
     }];
-    await state.updateStateByKey(ctx.pipelineName, "availableBranches", branches);
+    state.updateStateByKey(ctx.pipelineName, "availableBranches", branches);
     ctx.pipeStatus.writePipelineStatu("Success", 100);
     return;
   });

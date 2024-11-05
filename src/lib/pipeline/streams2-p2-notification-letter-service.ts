@@ -28,4 +28,5 @@ export async function nlPiprline(env: EnvSchemaType, branchName: string, commitI
     }
     ctx.pipeStatus.writePipelineStatu("Success", 100);
   });
+  await pipeline.exec();
 }
