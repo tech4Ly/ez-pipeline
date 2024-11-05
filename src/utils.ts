@@ -136,7 +136,12 @@ export class PipelineState {
     this.state = state;
     this._stateQueque.push(state);
     await this.exectue();
-    // await fs.writeFile(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(state));
+  }
+  async flush() {
+    if (this._stateQueque.length > 0) {
+      while (this._writing) {}
+      await fs.writeFile(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(this._stateQueque.pop()));
+    }
   }
 
   private async exectue() {
