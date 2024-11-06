@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { GitError, GitResponseError } from "simple-git";
 import { triggerPull } from "./gitHelper";
 import { FPS } from "./lib/constants";
-import { fpsPiprline } from "./lib/pipeline/streams2-p2-fps-service";
+import { fpsPipeline } from "./lib/pipeline/streams2-p2-fps-service";
 import { env, execJar, getLogText, PipelineState, processKill } from "./utils";
 
 const fps = new Hono();
@@ -62,7 +62,7 @@ fps.post("/pipeline/streams2/fps/:branchName/:commitId", async (c) => {
   try {
     await triggerPull(myEnv.EZ_PIPELINE_STREAMS2_FPS, commitId);
     // 开始触发, 触发后不需要等待它结束
-    fpsPiprline(myEnv, branchName, commitId);
+    fpsPipeline(myEnv, branchName, commitId);
     return c.text(`triggered the build process for commit: ${commitId}`);
   } catch (e) {
     if (e instanceof GitError) {

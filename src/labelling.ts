@@ -3,8 +3,8 @@ import { HTTPException } from "hono/http-exception";
 import { GitError, GitResponseError } from "simple-git";
 import { triggerPull } from "./gitHelper";
 import { LABELLING } from "./lib/constants";
+import { labellingPipeline } from "./lib/pipeline/streams2-p2-labelling-service";
 import { env, execJar, getLogText, PipelineState, processKill } from "./utils";
-import { labellingPiprline } from "./lib/pipeline/streams2-p2-labelling-service";
 
 const labelling = new Hono();
 
@@ -62,7 +62,7 @@ labelling.post("/pipeline/streams2/labelling/:branchName/:commitId", async (c) =
   try {
     await triggerPull(myEnv.EZ_PIPELINE_STREAMS2_LABELLING, commitId);
     // 开始触发, 触发后不需要等待它结束
-    labellingPiprline(myEnv, branchName, commitId);
+    labellingPipeline(myEnv, branchName, commitId);
     return c.text(`triggered the build process for commit: ${commitId}`);
   } catch (e) {
     if (e instanceof GitError) {

@@ -1,12 +1,12 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import fps from "./fps";
 import frontend from "./frontend";
+import labelling from "./labelling";
 import nl from "./nl";
+import str from "./str";
 import { readEnv } from "./utils";
 import { type EnvSchemaType } from "./utils";
-import fps from "./fps";
-import labelling from "./labelling";
-import str from "./str";
 
 readEnv();
 

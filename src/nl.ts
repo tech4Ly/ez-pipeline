@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { GitError, GitResponseError } from "simple-git";
 import { triggerPull } from "./gitHelper";
 import { NOTIFICATION_LETTER } from "./lib/constants";
-import { nlPiprline } from "./lib/pipeline/streams2-p2-notification-letter-service";
+import { nlPipeline } from "./lib/pipeline/streams2-p2-notification-letter-service";
 import { env, execJar, getLogText, PipelineState, processKill } from "./utils";
 
 const nl = new Hono();
@@ -62,7 +62,7 @@ nl.post("/pipeline/streams2/nl/:branchName/:commitId", async (c) => {
   try {
     await triggerPull(myEnv.EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER, commitId);
     // 开始触发, 触发后不需要等待它结束
-    nlPiprline(myEnv, branchName, commitId);
+    nlPipeline(myEnv, branchName, commitId);
     return c.text(`triggered the build process for commit: ${commitId}`);
   } catch (e) {
     if (e instanceof GitError) {

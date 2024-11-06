@@ -46,16 +46,46 @@ const frontend = new Hono();
 
 /** a proxy to avoid CORS errors */
 frontend.all("/api/*", (c) => {
-  const { method, path, raw } = c.req;
-  const { EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR } = env(c);
+  const { method, path: reqPath, raw } = c.req;
+  const {
+    EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR,
+    EZ_PIPELINE_STREAMS2_FPS_ADDR,
+    EZ_PIPELINE_STREAMS2_LABELLING_ADDR,
+    EZ_PIPELINE_STREAMS2_STR_ADDR,
+  } = env(c);
   console.log("env: ", EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR);
+  let targetService = "";
+  const [_api, _v1, serviceMarker, ..._rest] = reqPath.split("/");
+  console.log("coming a api call", reqPath, "will go through proxy");
+  switch (true) {
+    case serviceMarker.includes("nl"): {
+      targetService = EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR;
+      break;
+    }
+    case serviceMarker.includes("str"): {
+      targetService = EZ_PIPELINE_STREAMS2_STR_ADDR;
+      break;
+    }
+    case serviceMarker.includes("labelling"): {
+      targetService = EZ_PIPELINE_STREAMS2_LABELLING_ADDR;
+      break;
+    }
+    case serviceMarker.includes("fps"): {
+      targetService = EZ_PIPELINE_STREAMS2_FPS_ADDR;
+      break;
+    }
+    default: {
+      targetService = EZ_PIPELINE_STREAMS2_STR_ADDR;
+      console.log("proxy mismatch service, using default service", targetService);
+    }
+  }
   const reqOptions: RequestInit & { duplex: "half" } = {
     method,
     ...(raw.body && { body: raw.body }),
     headers: raw.headers,
     duplex: "half",
   };
-  return fetch(`${EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR}${path}`, reqOptions);
+  return fetch(`${targetService}${reqPath}`, reqOptions);
 });
 
 /**
