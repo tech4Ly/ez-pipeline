@@ -39,7 +39,7 @@ export async function nlPiprline(env: EnvSchemaType, branchName: string, commitI
     for await (const dirent of dir) {
       const ext = path.extname(dirent.name);
       console.log("checking file", dirent.name, " ", "ext: ", ext);
-      if (ext === "jar") {
+      if (ext === ".jar") {
         try {
           const dest = `${ctx.env.EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_OUTPUT}/${ctx.pipeStatus.commitId}.jar`;
           fs.copyFileSync(`${dirent.parentPath}/${dirent.name}`, dest);
@@ -54,6 +54,7 @@ export async function nlPiprline(env: EnvSchemaType, branchName: string, commitI
           await ctx.pipeStatus.writePipelineStatu("Failure", 0);
         }
       }
+      await ctx.pipeStatus.writePipelineStatu("Failure", 0);
     }
   });
 
