@@ -1,14 +1,42 @@
 [
   {
     "pipelineName": "streams2-frontend",
-    "activeBranch": "main",
-    "activeResourcesPath": "/Users/bb/Documents/",
-    "availableBranches": [
-      {
-        "name": "main",
-        "path": "/Users/bb/Documents/"
-      }
-    ],
+    "activePID": 0,
+    "activeBranch": "",
+    "activeResourcesPath": "",
+    "availableBranches": [],
+    "buildStatus": []
+  },
+  {
+    "pipelineName": "streams2-p2-notification-letter-service",
+    "activePID": 0,
+    "activeBranch": "",
+    "activeResourcesPath": "",
+    "availableBranches": [],
+    "buildStatus": []
+  },
+  {
+    "pipelineName": "streams2-p2-fps-service",
+    "activePID": 0,
+    "activeBranch": "",
+    "activeResourcesPath": "",
+    "availableBranches": [],
+    "buildStatus": []
+  },
+  {
+    "pipelineName": "streams2-p2-labelling-service",
+    "activePID": 0,
+    "activeBranch": "",
+    "activeResourcesPath": "",
+    "availableBranches": [],
+    "buildStatus": []
+  },
+  {
+    "pipelineName": "streams2-p2-suspicious-transaction-report-service",
+    "activePID": 0,
+    "activeBranch": "",
+    "activeResourcesPath": "",
+    "availableBranches": [],
     "buildStatus": []
   }
 ]
