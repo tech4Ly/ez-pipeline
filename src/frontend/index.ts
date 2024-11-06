@@ -8,7 +8,7 @@ import { GitError, GitResponseError } from "simple-git";
 import { triggerPull } from "../gitHelper";
 import { STREAMS2_FRONTEND } from "../lib/constants";
 import { startPipeline } from "../lib/pipeline/streams2-frontend";
-import { env, getBuildLogText, PipelineState } from "../utils";
+import { env, getLogText, PipelineState } from "../utils";
 /** 前端流程
  1. pre-commit format
  2. git push origin:target-test
@@ -157,7 +157,7 @@ frontend.post("/pipeline/streams2/frontend/:branchName/:commitId", async (c) => 
 
 frontend.get("/pipeline/streams2/frontend/:branchName/:commitId", async (c) => {
   const { commitId } = c.req.param();
-  const log = await getBuildLogText(env(c), commitId);
+  const log = await getLogText(`${env(c).EZ_PIPELINE_LOG_LOCATION}/${commitId}.log`);
   return c.text(log);
 });
 

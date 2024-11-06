@@ -1,5 +1,8 @@
 import { exec } from "child_process";
-import { EnvSchemaType, promiseFromChildProcess } from "../../utils";
+import * as fs from "fs";
+import { opendir } from "node:fs/promises";
+import * as path from "path";
+import { EnvSchemaType, PipelineState, promiseFromChildProcess } from "../../utils";
 import { NOTIFICATION_LETTER } from "../constants";
 import { Pipeline, printTitle } from ".";
 
@@ -11,7 +14,7 @@ export async function nlPiprline(env: EnvSchemaType, branchName: string, commitI
     await printTitle(ctx.logStream, "Step 1: Spring Boot package");
 
     const childHandler = exec(
-      `mvn clean install spring-boot:repackage -DskipTests -Denv.config=local -Dspring.profiles=local -Dproject.build.directory=${env.EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_OUTPUT}/${ctx.pipeStatus.commitId}`,
+      `mvn clean install spring-boot:repackage -DskipTests -Denv.config=local -Dspring.profiles=local`,
       { cwd: env.EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER },
     );
     if (!childHandler.stderr || !childHandler.stdout) {
@@ -26,7 +29,33 @@ export async function nlPiprline(env: EnvSchemaType, branchName: string, commitI
       console.error("pipeline fail on 'mvn install spring-boot:repackage'");
       return;
     }
-    ctx.pipeStatus.writePipelineStatu("Success", 100);
+    ctx.pipeStatus.writePipelineStatu("In Progress", 90);
+    await next();
   });
+
+  pipeline.use(async (ctx) => {
+    await printTitle(ctx.logStream, "Step 2: Moving output resources to target dir");
+    const dir = await opendir(`${ctx.env.EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER}/target`, { encoding: "utf8" });
+    for await (const dirent of dir) {
+      const ext = path.extname(dirent.name);
+      console.log("checking file", dirent.name, " ", "ext: ", ext);
+      if (ext === "jar") {
+        try {
+          const dest = `${ctx.env.EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_OUTPUT}/${ctx.pipeStatus.commitId}.jar`;
+          fs.copyFileSync(`${dirent.parentPath}/${dirent.name}`, dest);
+          const state = await PipelineState.init(ctx.env);
+          const { availableBranches } = state.readByPipelineName(ctx.pipelineName);
+          state.updateStateByKey(ctx.pipelineName, "availableBranches", [...availableBranches, {
+            path: dest,
+            name: ctx.pipeStatus.commitId,
+          }]);
+          await ctx.pipeStatus.writePipelineStatu("Success", 100);
+        } catch (e) {
+          await ctx.pipeStatus.writePipelineStatu("Failure", 0);
+        }
+      }
+    }
+  });
+
   await pipeline.exec();
 }

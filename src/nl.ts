@@ -1,10 +1,12 @@
+import { createReadStream } from "fs";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { JwtTokenNotBefore } from "hono/utils/jwt/types";
 import { GitError, GitResponseError } from "simple-git";
 import { triggerPull } from "./gitHelper";
 import { NOTIFICATION_LETTER } from "./lib/constants";
 import { nlPiprline } from "./lib/pipeline/streams2-p2-notification-letter-service";
-import { env, getBuildLogText, PipelineState } from "./utils";
+import { env, execJar, getLogText, PipelineState, processKill } from "./utils";
 
 const nl = new Hono();
 
@@ -12,16 +14,47 @@ nl.post("/pipeline/streams2/nl/activeBranch/:commitId", async (c) => {
   const { commitId } = c.req.param();
   const myEnv = env(c);
   const state = await PipelineState.init(myEnv);
-  const { availableBranches } = state.readByPipelineName(NOTIFICATION_LETTER);
+  const { availableBranches, activePID } = state.readByPipelineName(NOTIFICATION_LETTER);
   const branchInfo = availableBranches.find((value) => value.name.includes(commitId));
   if (!branchInfo) {
     return c.notFound();
   }
-  state.updateStateByKey(NOTIFICATION_LETTER, "activeBranch", branchInfo.name);
-  state.updateStateByKey(NOTIFICATION_LETTER, "activeResourcesPath", branchInfo.path);
+  if (activePID > 0) {
+    try {
+      await processKill(activePID, 5000);
+    } catch {
+      return c.json({
+        msg: "Fail on terminate app",
+      }, 500);
+    }
+  }
+  const pid = execJar(
+    `${myEnv.EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_OUTPUT}/${branchInfo.name}.jar`,
+    myEnv.EZ_PIPELINE_STREAMS2_PASSWORD,
+    `${myEnv.EZ_PIPELINE_LOG_LOCATION}/${branchInfo.name}.run.log`,
+  );
+  if (pid) {
+    state.updateStateByKey(NOTIFICATION_LETTER, "activeBranch", branchInfo.name);
+    state.updateStateByKey(NOTIFICATION_LETTER, "activeResourcesPath", branchInfo.path);
+    state.updateStateByKey(NOTIFICATION_LETTER, "activePID", pid);
+    return c.json({
+      msg: "The given branch is considered active",
+    });
+  }
   return c.json({
-    msg: "The given branch is considered active",
-  });
+    msg: "Fail on run the app",
+  }, 500);
+});
+
+nl.get("/pipeline/streams2/nl/activeBranch/:commitId", async (c) => {
+  const myEnv = env(c);
+  const state = await PipelineState.init(myEnv);
+  const { activeBranch } = state.readByPipelineName(NOTIFICATION_LETTER);
+  if (activeBranch) {
+    const log = await getLogText(`${myEnv.EZ_PIPELINE_LOG_LOCATION}/${activeBranch}.run.log`);
+    return c.text(log);
+  }
+  return c.notFound();
 });
 
 nl.post("/pipeline/streams2/nl/:branchName/:commitId", async (c) => {
@@ -54,7 +87,7 @@ nl.post("/pipeline/streams2/nl/:branchName/:commitId", async (c) => {
 
 nl.get("/pipeline/streams2/nl/:branchName/:commitId", async (c) => {
   const { commitId } = c.req.param();
-  const log = await getBuildLogText(env(c), commitId);
+  const log = await getLogText(`${env(c).EZ_PIPELINE_LOG_LOCATION}/${commitId}.log`);
   return c.text(log);
 });
 

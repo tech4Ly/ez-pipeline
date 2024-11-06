@@ -2,8 +2,9 @@ import { config } from "dotenv";
 import { expand } from "dotenv-expand";
 import { env as honoEnv } from "hono/adapter";
 import { HTTPException } from "hono/http-exception";
-import { ChildProcess } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { Children } from "hono/jsx";
+import { ChildProcess, spawn } from "node:child_process";
+import { createWriteStream, writeFileSync } from "node:fs";
 import * as fs from "node:fs/promises";
 import process from "node:process";
 import * as z from "zod";
@@ -77,9 +78,8 @@ export function promiseFromChildProcess(child: ChildProcess) {
   });
 }
 
-export async function getBuildLogText(env: EnvSchemaType, commitId: string) {
-  const logFilePath = `${env.EZ_PIPELINE_LOG_LOCATION}/${commitId}.log`;
-  const file = await fs.open(logFilePath, "r");
+export async function getLogText(logPath: `${string}.log`) {
+  const file = await fs.open(logPath, "r");
   // when you read file, this file may been written
   const stat = await file.stat();
   const b = Buffer.alloc(stat.size);
@@ -190,4 +190,43 @@ export class PipelineState {
       this.updateStateByKey(name, "buildStatus", newBuildStatus);
     }
   }
+}
+
+export async function processKill(pid: number, timeout: number) {
+  return new Promise((res, rej) => {
+    let count = 0;
+    let err: Error | null = null;
+    try {
+      process.kill(pid, "SIGINT");
+    } catch (e) {
+      if (e instanceof Error) {
+        err = e;
+      }
+    }
+    if (err) {
+      rej(new Error(`PID: ${pid} is not running`));
+    }
+    setInterval(() => {
+      try {
+        process.kill(pid, 0);
+      } catch {
+        res(true);
+      }
+      if ((count += 100) > timeout) {
+        rej(new Error("Timeout"));
+      }
+    }, 100);
+  });
+}
+
+export function execJar(jarPath: `${string}.jar`, password: string, logPath: string) {
+  const proc = spawn("java", ["-jar", jarPath, `-Djasypt.encryptor.password="${password}"`]);
+
+  const wStream = createWriteStream(`${logPath}`, {
+    flags: "w",
+  });
+  proc.stdout.pipe(wStream);
+  proc.stderr.pipe(wStream);
+
+  return proc.pid;
 }

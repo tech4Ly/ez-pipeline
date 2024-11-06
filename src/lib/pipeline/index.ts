@@ -34,7 +34,7 @@ class PipelineStatus {
       progression: progression,
     };
     const state = await PipelineState.init(this.env);
-    await state.updateBuildStatus(this.pipelineName, this.commitId, newStatus);
+    state.updateBuildStatus(this.pipelineName, this.commitId, newStatus);
   }
 }
 
