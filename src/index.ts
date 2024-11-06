@@ -4,6 +4,9 @@ import frontend from "./frontend";
 import nl from "./nl";
 import { readEnv } from "./utils";
 import { type EnvSchemaType } from "./utils";
+import fps from "./fps";
+import labelling from "./labelling";
+import str from "./str";
 
 readEnv();
 
@@ -19,6 +22,9 @@ app.get("/pipeline", (c) => {
 });
 app.route("/", frontend);
 app.route("/", nl);
+app.route("/", fps);
+app.route("/", labelling);
+app.route("/", str);
 app.onError((err, c) => {
   console.error(err);
   return c.json({ errorMsg: err.message }, 500);

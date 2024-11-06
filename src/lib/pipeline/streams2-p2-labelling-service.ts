@@ -3,7 +3,7 @@ import { LABELLING } from "../constants";
 import { Pipeline } from ".";
 import { stepMoveJarToTargetDir, stepPackageJar } from "./common";
 
-export async function labellingPiprline(
+export async function labellingPipeline(
   env: EnvSchemaType,
   branchName: string,
   commitId: string,
