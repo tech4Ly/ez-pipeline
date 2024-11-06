@@ -150,7 +150,7 @@ export class PipelineState {
   }
   flush() {
     if (this._stateQueque.length > 0) {
-      while (this._writing) { }
+      while (this._writing) {}
       writeFileSync(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(this._stateQueque.pop()));
     }
   }

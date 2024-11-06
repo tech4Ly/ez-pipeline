@@ -1,10 +1,9 @@
 import { exec } from "child_process";
-import { PipelineHandler, printTitle } from ".";
-import { PipelineState, promiseFromChildProcess } from "../../utils";
+import { copyFileSync } from "fs";
 import { opendir } from "fs/promises";
 import path from "path";
-import { copyFileSync } from "fs";
-
+import { PipelineState, promiseFromChildProcess } from "../../utils";
+import { PipelineHandler, printTitle } from ".";
 
 export function stepPackageJar(cwd: string): PipelineHandler {
   return async (ctx, next) => {
@@ -12,7 +11,7 @@ export function stepPackageJar(cwd: string): PipelineHandler {
 
     const childHandler = exec(
       `mvn clean install spring-boot:repackage -DskipTests -Denv.config=local -Dspring.profiles=local`,
-      { cwd }
+      { cwd },
     );
     if (!childHandler.stderr || !childHandler.stdout) {
       throw new Error("no stderr or stdout");
@@ -55,5 +54,5 @@ export function stepMoveJarToTargetDir(src: string, dest: `${string}.jar`): Pipe
         await ctx.pipeStatus.writePipelineStatu("Failure", 0);
       }
     }
-  }
+  };
 }

@@ -2,17 +2,17 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { GitError, GitResponseError } from "simple-git";
 import { triggerPull } from "./gitHelper";
-import { FPS } from "./lib/constants";
-import { fpsPiprline } from "./lib/pipeline/streams2-p2-fps-service";
+import { LABELLING } from "./lib/constants";
 import { env, execJar, getLogText, PipelineState, processKill } from "./utils";
+import { labellingPiprline } from "./lib/pipeline/streams2-p2-labelling-service";
 
-const fps = new Hono();
+const labelling = new Hono();
 
-fps.post("/pipeline/streams2/fps/activeBranch/:commitId", async (c) => {
+labelling.post("/pipeline/streams2/labelling/activeBranch/:commitId", async (c) => {
   const { commitId } = c.req.param();
   const myEnv = env(c);
   const state = await PipelineState.init(myEnv);
-  const { availableBranches, activePID } = state.readByPipelineName(FPS);
+  const { availableBranches, activePID } = state.readByPipelineName(LABELLING);
   const branchInfo = availableBranches.find((value) => value.name.includes(commitId));
   if (!branchInfo) {
     return c.notFound();
@@ -27,14 +27,14 @@ fps.post("/pipeline/streams2/fps/activeBranch/:commitId", async (c) => {
     }
   }
   const pid = execJar(
-    `${myEnv.EZ_PIPELINE_STREAMS2_FPS_OUTPUT}/${branchInfo.name}.jar`,
+    `${myEnv.EZ_PIPELINE_STREAMS2_LABELLING_OUTPUT}/${branchInfo.name}.jar`,
     myEnv.EZ_PIPELINE_STREAMS2_PASSWORD,
     `${myEnv.EZ_PIPELINE_LOG_LOCATION}/${branchInfo.name}.run.log`,
   );
   if (pid) {
-    state.updateStateByKey(FPS, "activeBranch", branchInfo.name);
-    state.updateStateByKey(FPS, "activeResourcesPath", branchInfo.path);
-    state.updateStateByKey(FPS, "activePID", pid);
+    state.updateStateByKey(LABELLING, "activeBranch", branchInfo.name);
+    state.updateStateByKey(LABELLING, "activeResourcesPath", branchInfo.path);
+    state.updateStateByKey(LABELLING, "activePID", pid);
     return c.json({
       msg: "The given branch is considered active",
     });
@@ -44,10 +44,10 @@ fps.post("/pipeline/streams2/fps/activeBranch/:commitId", async (c) => {
   }, 500);
 });
 
-fps.get("/pipeline/streams2/fps/activeBranch/:commitId", async (c) => {
+labelling.get("/pipeline/streams2/labelling/activeBranch/:commitId", async (c) => {
   const myEnv = env(c);
   const state = await PipelineState.init(myEnv);
-  const { activeBranch } = state.readByPipelineName(FPS);
+  const { activeBranch } = state.readByPipelineName(LABELLING);
   if (activeBranch) {
     const log = await getLogText(`${myEnv.EZ_PIPELINE_LOG_LOCATION}/${activeBranch}.run.log`);
     return c.text(log);
@@ -55,21 +55,21 @@ fps.get("/pipeline/streams2/fps/activeBranch/:commitId", async (c) => {
   return c.notFound();
 });
 
-fps.post("/pipeline/streams2/fps/:branchName/:commitId", async (c) => {
-  console.log("trigger streams2 fps pipeline");
+labelling.post("/pipeline/streams2/labelling/:branchName/:commitId", async (c) => {
+  console.log("trigger streams2 labelling pipeline");
   const { commitId, branchName } = c.req.param();
   const myEnv = env(c);
   try {
-    await triggerPull(myEnv.EZ_PIPELINE_STREAMS2_FPS, commitId);
+    await triggerPull(myEnv.EZ_PIPELINE_STREAMS2_LABELLING, commitId);
     // 开始触发, 触发后不需要等待它结束
-    fpsPiprline(myEnv, branchName, commitId);
+    labellingPiprline(myEnv, branchName, commitId);
     return c.text(`triggered the build process for commit: ${commitId}`);
   } catch (e) {
     if (e instanceof GitError) {
       if (e.message.includes("not a git repository")) {
         throw new HTTPException(500, {
           message:
-            "检查下是不是没有安装git环境, 或者环境变量中 STREAMS2_NOTIFICATION_LETTER 路径是否错误，该路径需要指向 Streams2 前端项目的根目录",
+            "检查下是不是没有安装git环境, 或者环境变量中 STREAMS2_LABELING 路径是否错误，该路径需要指向 Streams2 前端项目的根目录",
         });
       }
       if (e.message.includes("did not match any file")) {
@@ -83,19 +83,19 @@ fps.post("/pipeline/streams2/fps/:branchName/:commitId", async (c) => {
   }
 });
 
-fps.get("/pipeline/streams2/fps/:branchName/:commitId", async (c) => {
+labelling.get("/pipeline/streams2/labelling/:branchName/:commitId", async (c) => {
   const { commitId } = c.req.param();
   const log = await getLogText(`${env(c).EZ_PIPELINE_LOG_LOCATION}/${commitId}.log`);
   return c.text(log);
 });
 
-fps.get("/pipeline/streams2/fps", async (c) => {
+labelling.get("/pipeline/streams2/labelling", async (c) => {
   const state = await PipelineState.init(env(c));
-  const { buildStatus } = state.readByPipelineName(FPS);
+  const { buildStatus } = state.readByPipelineName(LABELLING);
   return c.json({
     msg: "Return build staus",
     buildingStatus: buildStatus,
   });
 });
 
-export default fps;
+export default labelling;
