@@ -41,11 +41,20 @@ const envSchema = z.object({
   EZ_PIPELINE_STREAMS2_FRONTEND: z.string(),
   EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER: z.string(),
   EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR: z.string(),
+  EZ_PIPELINE_STREAMS2_FPS: z.string(),
+  EZ_PIPELINE_STREAMS2_FPS_ADDR: z.string(),
+  EZ_PIPELINE_STREAMS2_STR: z.string(),
+  EZ_PIPELINE_STREAMS2_STR_ADDR: z.string(),
+  EZ_PIPELINE_STREAMS2_LABELLING: z.string(),
+  EZ_PIPELINE_STREAMS2_LABELLING_ADDR: z.string(),
   EZ_PIPELINE_LOG_LOCATION: z.string(),
   EZ_PIPELINE: z.string(),
   EZ_PIPELINE_STATE_LOCATION: z.string(),
   EZ_PIPELINE_STREAMS2_FRONTEND_OUTPUT: z.string(),
   EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_OUTPUT: z.string(),
+  EZ_PIPELINE_STREAMS2_FPS_OUTPUT: z.string(),
+  EZ_PIPELINE_STREAMS2_STR_OUTPUT: z.string(),
+  EZ_PIPELINE_STREAMS2_LABELLING_OUTPUT: z.string(),
   EZ_PIPELINE_STREAMS2_DB_URL: z.string(),
   EZ_PIPELINE_STREAMS2_DB_USERNAME: z.string(),
   EZ_PIPELINE_STREAMS2_DB_PASSWORD: z.string(),
@@ -141,7 +150,7 @@ export class PipelineState {
   }
   flush() {
     if (this._stateQueque.length > 0) {
-      while (this._writing) {}
+      while (this._writing) { }
       writeFileSync(`${this.env.EZ_PIPELINE_STATE_LOCATION}/state.json`, JSON.stringify(this._stateQueque.pop()));
     }
   }
@@ -219,8 +228,8 @@ export async function processKill(pid: number, timeout: number) {
   });
 }
 
-export function execJar(jarPath: `${string}.jar`, password: string, logPath: string) {
-  const proc = spawn("java", ["-jar", jarPath, `-Djasypt.encryptor.password="${password}"`]);
+export function execJar(jarPath: `${string}.jar`, password: string, logPath: string, args: string[] = []) {
+  const proc = spawn("java", ["-jar", jarPath, `-Djasypt.encryptor.password="${password}"`, ...args]);
 
   const wStream = createWriteStream(`${logPath}`, {
     flags: "w",

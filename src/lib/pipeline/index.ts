@@ -42,7 +42,7 @@ interface Next {
   (): Promise<void>;
 }
 
-type PipelineHandler = (
+export type PipelineHandler = (
   ctx: Pick<Pipeline, "env" | "logStream" | "pipeStatus" | "pipelineName">,
   next: Next,
 ) => Promise<void>;
