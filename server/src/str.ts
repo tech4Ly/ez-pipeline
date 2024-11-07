@@ -30,7 +30,7 @@ str.post("/pipeline/streams2/str/activeBranch/:commitId", async (c) => {
     `${myEnv.EZ_PIPELINE_STREAMS2_STR_OUTPUT}/${branchInfo.name}.jar`,
     myEnv.EZ_PIPELINE_STREAMS2_PASSWORD,
     `${myEnv.EZ_PIPELINE_LOG_LOCATION}/${branchInfo.name}.run.log`,
-    ["-Dserver.port=8080"],
+    ["--server.port=8080"],
   );
   if (pid) {
     state.updateStateByKey(STR, "activeBranch", branchInfo.name);
