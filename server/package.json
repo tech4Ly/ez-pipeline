@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "tsc && echo \"test\" && node --enable-source-maps ./dist/index.js",
+    "start": "tsc && echo \"test\" && node --enable-source-maps dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "fmt": "dprint fmt"
   },

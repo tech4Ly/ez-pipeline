@@ -55,7 +55,7 @@ frontend.all("/api/*", (c) => {
   } = env(c);
   console.log("env: ", EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR);
   let targetService = "";
-  const [_api, _v1, serviceMarker, ..._rest] = reqPath.split("/");
+  const [_, _api, _v1, serviceMarker, ..._rest] = reqPath.split("/");
   console.log("coming a api call", reqPath, "will go through proxy");
   switch (true) {
     case serviceMarker.includes("nl"): {

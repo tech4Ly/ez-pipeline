@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "tsc && echo \"test\" && node --enable-source-maps ./dist/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:fe": "pnpm -F *frontend run dev",
+    "dev:be": "pnpm -F *server run start",
     "fmt": "dprint fmt"
   },
   "keywords": [],
