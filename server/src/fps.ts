@@ -8,7 +8,7 @@ import { env, execJar, getLogText, PipelineState, processKill } from "./utils";
 
 const fps = new Hono();
 
-fps.post("/pipeline/streams2/fps/activeBranch/:commitId", async (c) => {
+const apiSetActiveCommit = fps.post("/pipeline/streams2/fps/activeBranch/:commitId", async (c) => {
   const { commitId } = c.req.param();
   const myEnv = env(c);
   const state = await PipelineState.init(myEnv);
@@ -44,7 +44,7 @@ fps.post("/pipeline/streams2/fps/activeBranch/:commitId", async (c) => {
   }, 500);
 });
 
-fps.get("/pipeline/streams2/fps/activeBranch/:commitId", async (c) => {
+const apiGetAppLog = fps.get("/pipeline/streams2/fps/activeBranch/:commitId", async (c) => {
   const myEnv = env(c);
   const state = await PipelineState.init(myEnv);
   const { activeBranch } = state.readByPipelineName(FPS);
@@ -55,7 +55,7 @@ fps.get("/pipeline/streams2/fps/activeBranch/:commitId", async (c) => {
   return c.notFound();
 });
 
-fps.post("/pipeline/streams2/fps/:branchName/:commitId", async (c) => {
+const apiTriggerPipeline = fps.post("/pipeline/streams2/fps/:branchName/:commitId", async (c) => {
   console.log("trigger streams2 fps pipeline");
   const { commitId, branchName } = c.req.param();
   const myEnv = env(c);
@@ -83,13 +83,13 @@ fps.post("/pipeline/streams2/fps/:branchName/:commitId", async (c) => {
   }
 });
 
-fps.get("/pipeline/streams2/fps/:branchName/:commitId", async (c) => {
+const apiGetPipelineDetail = fps.get("/pipeline/streams2/fps/:branchName/:commitId", async (c) => {
   const { commitId } = c.req.param();
   const log = await getLogText(`${env(c).EZ_PIPELINE_LOG_LOCATION}/${commitId}.log`);
   return c.text(log);
 });
 
-fps.get("/pipeline/streams2/fps", async (c) => {
+const apiGetPipelineStatus =  fps.get("/pipeline/streams2/fps", async (c) => {
   const state = await PipelineState.init(env(c));
   const { buildStatus } = state.readByPipelineName(FPS);
   return c.json({
@@ -99,3 +99,11 @@ fps.get("/pipeline/streams2/fps", async (c) => {
 });
 
 export default fps;
+
+export type FPSPipelineApi = {
+  apiSetActiveCommit: typeof apiSetActiveCommit,
+  apiGetAppLog: typeof apiGetAppLog,
+  apiGetPipelineDetail: typeof apiGetPipelineDetail,
+  apiGetPipelineStatus: typeof apiGetPipelineStatus,
+  apiTriggerPipeline: typeof apiTriggerPipeline,
+}

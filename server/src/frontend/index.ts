@@ -141,7 +141,7 @@ frontend.get("/web", async (c) => {
   return c.html(content);
 });
 
-frontend.post("/pipeline/streams2/frontend/activeBranch/:commitId", async (c) => {
+const apiSetActiveCommit = frontend.post("/pipeline/streams2/frontend/activeBranch/:commitId", async (c) => {
   const { commitId } = c.req.param();
   const myEnv = env(c);
   const state = await PipelineState.init(myEnv);
@@ -157,7 +157,7 @@ frontend.post("/pipeline/streams2/frontend/activeBranch/:commitId", async (c) =>
   });
 });
 
-frontend.post("/pipeline/streams2/frontend/:branchName/:commitId", async (c) => {
+const apiTriggerPipeline = frontend.post("/pipeline/streams2/frontend/:branchName/:commitId", async (c) => {
   console.log("trigger streams2 frontend pipeline");
   const { commitId, branchName } = c.req.param();
   const myEnv = env(c);
@@ -185,13 +185,13 @@ frontend.post("/pipeline/streams2/frontend/:branchName/:commitId", async (c) => 
   }
 });
 
-frontend.get("/pipeline/streams2/frontend/:branchName/:commitId", async (c) => {
+const apiGetPipelineLog = frontend.get("/pipeline/streams2/frontend/:branchName/:commitId", async (c) => {
   const { commitId } = c.req.param();
   const log = await getLogText(`${env(c).EZ_PIPELINE_LOG_LOCATION}/${commitId}.log`);
   return c.text(log);
 });
 
-frontend.get("/pipeline/streams2/frontend", async (c) => {
+const apiPipelineStatus = frontend.get("/pipeline/streams2/frontend", async (c) => {
   const state = await PipelineState.init(env(c));
   const { buildStatus } = state.readByPipelineName(STREAMS2_FRONTEND);
   return c.json({
@@ -201,3 +201,10 @@ frontend.get("/pipeline/streams2/frontend", async (c) => {
 });
 
 export default frontend;
+
+export type FrontendPipelineApi = {
+  apiGetPipelineLog: typeof apiGetPipelineLog,
+  apiSetActiveCommit: typeof apiSetActiveCommit,
+  apiTriggerPipeline: typeof apiTriggerPipeline,
+  apiPipelineStatus: typeof apiPipelineStatus,
+}
