@@ -46,165 +46,199 @@ const frontend = new Hono();
 
 /** a proxy to avoid CORS errors */
 frontend.all("/api/*", (c) => {
-  const { method, path: reqPath, raw } = c.req;
-  const {
-    EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR,
-    EZ_PIPELINE_STREAMS2_FPS_ADDR,
-    EZ_PIPELINE_STREAMS2_LABELLING_ADDR,
-    EZ_PIPELINE_STREAMS2_STR_ADDR,
-  } = env(c);
-  console.log("env: ", EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR);
-  let targetService = "";
-  const [_, _api, _v1, serviceMarker, ..._rest] = reqPath.split("/");
-  console.log("coming a api call", reqPath, "will go through proxy");
-  switch (true) {
-    case serviceMarker.includes("nl"): {
-      targetService = EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR;
-      break;
+    const { method, path: reqPath, raw } = c.req;
+    const {
+        EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR,
+        EZ_PIPELINE_STREAMS2_FPS_ADDR,
+        EZ_PIPELINE_STREAMS2_LABELLING_ADDR,
+        EZ_PIPELINE_STREAMS2_STR_ADDR,
+    } = env(c);
+    console.log("env: ", EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR);
+    let targetService = "";
+    const [_, _api, _v1, serviceMarker, ..._rest] = reqPath.split("/");
+    console.log("coming a api call", reqPath, "will go through proxy");
+    switch (true) {
+        case serviceMarker.includes("nl"): {
+            targetService = EZ_PIPELINE_STREAMS2_NOTIFICATION_LETTER_ADDR;
+            break;
+        }
+        case serviceMarker.includes("str"): {
+            targetService = EZ_PIPELINE_STREAMS2_STR_ADDR;
+            break;
+        }
+        case serviceMarker.includes("labelling"): {
+            targetService = EZ_PIPELINE_STREAMS2_LABELLING_ADDR;
+            break;
+        }
+        case serviceMarker.includes("fps"): {
+            targetService = EZ_PIPELINE_STREAMS2_FPS_ADDR;
+            break;
+        }
+        default: {
+            targetService = EZ_PIPELINE_STREAMS2_STR_ADDR;
+            console.log(
+                "proxy mismatch service, using default service",
+                targetService,
+            );
+        }
     }
-    case serviceMarker.includes("str"): {
-      targetService = EZ_PIPELINE_STREAMS2_STR_ADDR;
-      break;
-    }
-    case serviceMarker.includes("labelling"): {
-      targetService = EZ_PIPELINE_STREAMS2_LABELLING_ADDR;
-      break;
-    }
-    case serviceMarker.includes("fps"): {
-      targetService = EZ_PIPELINE_STREAMS2_FPS_ADDR;
-      break;
-    }
-    default: {
-      targetService = EZ_PIPELINE_STREAMS2_STR_ADDR;
-      console.log("proxy mismatch service, using default service", targetService);
-    }
-  }
-  const reqOptions: RequestInit & { duplex: "half" } = {
-    method,
-    ...(raw.body && { body: raw.body }),
-    headers: raw.headers,
-    duplex: "half",
-  };
-  return fetch(`${targetService}${reqPath}`, reqOptions);
+    const reqOptions: RequestInit & { duplex: "half" } = {
+        method,
+        ...(raw.body && { body: raw.body }),
+        headers: raw.headers,
+        duplex: "half",
+    };
+    return fetch(`${targetService}${reqPath}`, reqOptions);
 });
 
 /**
 a static resrouces service
 */
 frontend.get("/resources/*", async (c) => {
-  // build a file system
-  const state = await PipelineState.init(env(c));
-  const { activeResourcesPath } = state.readByPipelineName(STREAMS2_FRONTEND);
-  const reqPath = c.req.path;
-  // 这里是绝对路径 split 后会有至少三个元素 ['', 'resources', 'file.xx']
-  let paths = reqPath.split("/");
-  paths = paths.slice(1);
-  paths[0] = activeResourcesPath;
-  const absolutPath = path.resolve(...paths);
+    // build a file system
+    const state = await PipelineState.init(env(c));
+    const { activeResourcesPath } = state.readByPipelineName(STREAMS2_FRONTEND);
+    const reqPath = c.req.path;
+    // 这里是绝对路径 split 后会有至少三个元素 ['', 'resources', 'file.xx']
+    let paths = reqPath.split("/");
+    paths = paths.slice(1);
+    paths[0] = activeResourcesPath;
+    const absolutPath = path.resolve(...paths);
 
-  let stat: fs.Stats | undefined;
-  try {
-    stat = fs.statSync(absolutPath);
-  } catch {}
+    let stat: fs.Stats | undefined;
+    try {
+        stat = fs.statSync(absolutPath);
+    } catch {}
 
-  console.log("get path", absolutPath);
-  console.info(stat);
-  if (!stat || stat.isDirectory()) {
-    return c.notFound();
-  }
-  const readStream = fs.createReadStream(absolutPath);
-  const readableStream = new ReadableStream({
-    start(controller) {
-      readStream.on("data", (chunk) => {
-        controller.enqueue(chunk);
-      });
-      readStream.on("end", () => {
-        controller.close();
-      });
-    },
-    cancel() {
-      readStream.destroy();
-    },
-  });
+    console.log("get path", absolutPath);
+    console.info(stat);
+    if (!stat || stat.isDirectory()) {
+        return c.notFound();
+    }
+    const readStream = fs.createReadStream(absolutPath);
+    const readableStream = new ReadableStream({
+        start(controller) {
+            readStream.on("data", (chunk) => {
+                controller.enqueue(chunk);
+            });
+            readStream.on("end", () => {
+                controller.close();
+            });
+        },
+        cancel() {
+            readStream.destroy();
+        },
+    });
 
-  const mimeType = getMimeType(path.basename(absolutPath));
-  c.header("Content-Type", mimeType || "application/octet-stream");
-  c.header("Content-Length", stat.size.toString());
-  return c.body(readableStream, 200);
+    const mimeType = getMimeType(path.basename(absolutPath));
+    c.header("Content-Type", mimeType || "application/octet-stream");
+    c.header("Content-Length", stat.size.toString());
+    return c.body(readableStream, 200);
 });
 
 frontend.get("/web", async (c) => {
-  const state = await PipelineState.init(env(c));
-  const { activeResourcesPath } = state.readByPipelineName(STREAMS2_FRONTEND);
-  const indexPath = path.resolve(activeResourcesPath, "index.html");
-  const content = fsPs.readFile(indexPath, { encoding: "utf8" });
-  return c.html(content);
+    const state = await PipelineState.init(env(c));
+    const { activeResourcesPath } = state.readByPipelineName(STREAMS2_FRONTEND);
+    const indexPath = path.resolve(activeResourcesPath, "index.html");
+    const content = fsPs.readFile(indexPath, { encoding: "utf8" });
+    return c.html(content);
 });
 
-const apiSetActiveCommit = frontend.post("/pipeline/streams2/frontend/activeBranch/:commitId", async (c) => {
-  const { commitId } = c.req.param();
-  const myEnv = env(c);
-  const state = await PipelineState.init(myEnv);
-  const { availableBranches } = state.readByPipelineName(STREAMS2_FRONTEND);
-  const branchInfo = availableBranches.find((value) => value.name.includes(commitId));
-  if (!branchInfo) {
-    return c.notFound();
-  }
-  state.updateStateByKey(STREAMS2_FRONTEND, "activeBranch", branchInfo.name);
-  state.updateStateByKey(STREAMS2_FRONTEND, "activeResourcesPath", branchInfo.path);
-  return c.json({
-    msg: "The given branch is considered active",
-  });
-});
-
-const apiTriggerPipeline = frontend.post("/pipeline/streams2/frontend/:branchName/:commitId", async (c) => {
-  console.log("trigger streams2 frontend pipeline");
-  const { commitId, branchName } = c.req.param();
-  const myEnv = env(c);
-  try {
-    await triggerPull(myEnv.EZ_PIPELINE_STREAMS2_FRONTEND, commitId);
-    // 开始触发, 触发后不需要等待它结束
-    startPipeline(myEnv, branchName, commitId);
-    return c.text(`triggered the build process for commit: ${commitId}`);
-  } catch (e) {
-    if (e instanceof GitError) {
-      if (e.message.includes("not a git repository")) {
-        throw new HTTPException(500, {
-          message:
-            "检查下是不是没有安装git环境, 或者环境变量中 STREAMS2_FRONTEND 路径是否错误，该路径需要指向 Streams2 前端项目的根目录",
+const apiSetActiveCommit = frontend.post(
+    "/pipeline/streams2/frontend/activeBranch/:commitId",
+    async (c) => {
+        const { commitId } = c.req.param();
+        const myEnv = env(c);
+        const state = await PipelineState.init(myEnv);
+        const { availableBranches } =
+            state.readByPipelineName(STREAMS2_FRONTEND);
+        const branchInfo = availableBranches.find((value) =>
+            value.name.includes(commitId),
+        );
+        if (!branchInfo) {
+            return c.notFound();
+        }
+        state.updateStateByKey(
+            STREAMS2_FRONTEND,
+            "activeBranch",
+            branchInfo.name,
+        );
+        state.updateStateByKey(
+            STREAMS2_FRONTEND,
+            "activeResourcesPath",
+            branchInfo.path,
+        );
+        return c.json({
+            msg: "The given branch is considered active",
         });
-      }
-      if (e.message.includes("did not match any file")) {
-        throw new HTTPException(404, { message: `请检查 commitId ${commitId} 是否在库内` });
-      }
-    }
-    if (e instanceof GitResponseError) {
-      throw new HTTPException(404, { message: `没有在分支: ${branchName} 上找到指定的 commit. commitId: ${commitId}` });
-    }
-    throw e;
-  }
-});
+    },
+);
 
-const apiGetPipelineLog = frontend.get("/pipeline/streams2/frontend/:branchName/:commitId", async (c) => {
-  const { commitId } = c.req.param();
-  const log = await getLogText(`${env(c).EZ_PIPELINE_LOG_LOCATION}/${commitId}.log`);
-  return c.text(log);
-});
+const apiTriggerPipeline = frontend.post(
+    "/pipeline/streams2/frontend/:branchName/:commitId",
+    async (c) => {
+        console.log("trigger streams2 frontend pipeline");
+        const { commitId, branchName } = c.req.param();
+        const myEnv = env(c);
+        try {
+            await triggerPull(myEnv.EZ_PIPELINE_STREAMS2_FRONTEND, commitId);
+            // 开始触发, 触发后不需要等待它结束
+            startPipeline(myEnv, branchName, commitId);
+            return c.text(
+                `triggered the build process for commit: ${commitId}`,
+            );
+        } catch (e) {
+            if (e instanceof GitError) {
+                if (e.message.includes("not a git repository")) {
+                    throw new HTTPException(500, {
+                        message:
+                            "检查下是不是没有安装git环境, 或者环境变量中 STREAMS2_FRONTEND 路径是否错误，该路径需要指向 Streams2 前端项目的根目录",
+                    });
+                }
+                if (e.message.includes("did not match any file")) {
+                    throw new HTTPException(404, {
+                        message: `请检查 commitId ${commitId} 是否在库内`,
+                    });
+                }
+            }
+            if (e instanceof GitResponseError) {
+                throw new HTTPException(404, {
+                    message: `没有在分支: ${branchName} 上找到指定的 commit. commitId: ${commitId}`,
+                });
+            }
+            throw e;
+        }
+    },
+);
 
-const apiPipelineStatus = frontend.get("/pipeline/streams2/frontend", async (c) => {
-  const state = await PipelineState.init(env(c));
-  const { buildStatus } = state.readByPipelineName(STREAMS2_FRONTEND);
-  return c.json({
-    msg: "Return build staus",
-    buildingStatus: buildStatus,
-  });
-});
+const apiGetPipelineLog = frontend.get(
+    "/pipeline/streams2/frontend/:branchName/:commitId",
+    async (c) => {
+        const { commitId } = c.req.param();
+        const log = await getLogText(
+            `${env(c).EZ_PIPELINE_LOG_LOCATION}/${commitId}.log`,
+        );
+        return c.text(log);
+    },
+);
+
+const apiPipelineStatus = frontend.get(
+    "/pipeline/streams2/frontend",
+    async (c) => {
+        const state = await PipelineState.init(env(c));
+        const { buildStatus } = state.readByPipelineName(STREAMS2_FRONTEND);
+        return c.json({
+            msg: "Return build staus",
+            buildingStatus: buildStatus,
+        });
+    },
+);
 
 export default frontend;
 
 export type FrontendPipelineApi = {
-  apiGetPipelineLog: typeof apiGetPipelineLog,
-  apiSetActiveCommit: typeof apiSetActiveCommit,
-  apiTriggerPipeline: typeof apiTriggerPipeline,
-  apiPipelineStatus: typeof apiPipelineStatus,
-}
+    apiGetPipelineLog: typeof apiGetPipelineLog;
+    apiSetActiveCommit: typeof apiSetActiveCommit;
+    apiTriggerPipeline: typeof apiTriggerPipeline;
+    apiPipelineStatus: typeof apiPipelineStatus;
+};

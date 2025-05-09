@@ -1,27 +1,29 @@
 {
-  "name": "@pipeline/frontend",
-  "private": true,
-  "version": "1.0.0",
-  "scripts": {
-    "dev": "rsbuild dev",
-    "build": "rsbuild build",
-    "preview": "rsbuild preview"
-  },
-  "dependencies": {
-    "@emotion/react": "^11.13.3",
-    "@emotion/styled": "^11.13.0",
-    "@mui/material": "^6.1.6",
-    "@tanstack/react-router": "^1.79.0",
-    "hono": "^4.6.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@pipeline/server": "workspace:*",
-    "@rsbuild/core": "^1.0.18",
-    "@rsbuild/plugin-react": "^1.0.5",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "typescript": "^5.6.3"
-  }
+    "name": "@pipeline/frontend",
+    "private": true,
+    "version": "1.0.0",
+    "scripts": {
+        "dev": "rsbuild dev --port 3001",
+        "build": "rsbuild build",
+        "preview": "rsbuild preview"
+    },
+    "dependencies": {
+        "@emotion/react": "^11.13.3",
+        "@emotion/styled": "^11.13.0",
+        "@mui/lab": "6.0.0-beta.14",
+        "@mui/material": "^6.1.6",
+        "@tanstack/react-router": "^1.79.0",
+        "hono": "^4.6.3",
+        "react": "experimental",
+        "react-dom": "experimental",
+        "react-error-boundary": "^4.1.2"
+    },
+    "devDependencies": {
+        "@pipeline/server": "workspace:*",
+        "@rsbuild/core": "^1.0.18",
+        "@rsbuild/plugin-react": "^1.0.5",
+        "@types/react": "^18.3.12",
+        "@types/react-dom": "^18.3.1",
+        "typescript": "^5.6.3"
+    }
 }

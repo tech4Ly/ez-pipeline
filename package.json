@@ -1,17 +1,18 @@
 {
-  "name": "@pipeline/root",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "dev:fe": "pnpm -F *frontend run dev",
-    "dev:be": "pnpm -F *server run start",
-    "fmt": "dprint fmt"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "dprint": "^0.47.4"
-  }
+    "name": "@pipeline/root",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "dev:fe": "pnpm -F *frontend run dev",
+        "dev:be": "pnpm -F *server run dev",
+        "dev": "pnpm --parallel -r run dev ",
+        "fmt": "dprint fmt"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "dprint": "^0.47.4"
+    }
 }
